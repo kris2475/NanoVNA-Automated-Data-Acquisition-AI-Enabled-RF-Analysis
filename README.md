@@ -187,7 +187,7 @@ You are free to use, adapt, and share this script for academic, research, or edu
 
 ## 📘 Project Details
 
-- **Author:** *[Your Name]*  
+- **Author:** K Seunarine
 - **Version:** 2.9  
 - **Last Updated:** October 2025  
 - **Output Directory:** `nanovna_data/`
