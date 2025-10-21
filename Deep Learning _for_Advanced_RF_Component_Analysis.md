@@ -6,6 +6,7 @@ This project outlines a complete workflow — from **data acquisition** to **dee
 
 By combining affordable measurement hardware with advanced AI techniques, this framework maximizes the utility of the test board as a versatile data source for complex **S-parameter** measurements.
 
+---
 
 ## 🧭 Executive Summary
 
@@ -71,11 +72,92 @@ In short, this project shows how combining **data science and RF engineering** c
 
 ---
 
+## 🧩 Implementation Guide — Connecting the NanoVNA and Building the Data Pipeline
 
+This section walks through the **practical setup** required to reproduce the project — from hardware configuration to automated data collection. The goal is to integrate the NanoVNA seamlessly into a Python-based machine learning workflow.
 
+### ⚙️ 1. Hardware Requirements
 
+| Component | Description | Notes |
+|------------|-------------|-------|
+| **NanoVNA (v2 or v3 recommended)** | Low-cost 2-port vector network analyzer | Ensure it supports USB communication |
+| **NanoVNA Filter & Attenuator Test Board** | Demo PCB with LPF, HPF, BPF, and Attenuator circuits | Commonly sold as a NanoVNA test kit |
+| **USB Cable** | For connecting the NanoVNA to the host PC | Use a high-quality cable for stable data transfer |
+| **SMA Male–Male Cables** | To connect NanoVNA CH0 and CH1 to the test board | Keep lengths equal for consistent calibration |
+| **Calibration Kit (SOLT)** | Short, Open, Load, Thru standards | Essential for accurate 2-port calibration |
+| **PC or Raspberry Pi** | Running Python 3.8+ | Used for automation and data collection |
 
+### 🧠 2. Software Requirements
 
+Install these libraries:
+
+```bash
+pip install numpy pandas matplotlib scikit-learn tensorflow pynanovna jupyter
+```
+
+### 🧲 3. Hardware Setup and Calibration
+
+1. **Connect the NanoVNA to the Host PC**
+   - Plug the NanoVNA via USB.
+   - Identify the COM/serial port (`COM3` on Windows, `/dev/ttyUSB0` on Linux).
+
+2. **Perform a Full 2-Port SOLT Calibration**
+   - Use the calibration standards at the **reference plane** (test board SMA connectors).
+   - Steps: Short → Open → Load → Thru.
+   - Save calibration settings to memory.
+
+3. **Connect the RF Test Board**
+   - CH0 → Input of the DUT  
+   - CH1 → Output of the DUT  
+
+### 📡 4. Automated Data Acquisition in Python
+
+```python
+from pynanovna import NanoVNA
+import pandas as pd
+
+vna = NanoVNA()
+vna.connect(port='COM3')  # Adjust as needed
+
+vna.set_sweep(1e6, 1e9, 401)  # 1 MHz–1 GHz, 401 points
+data = vna.capture_sweep()
+vna.disconnect()
+
+df = pd.DataFrame({
+    'frequency_Hz': data['frequency'],
+    'S11_real': data['S11'].real,
+    'S11_imag': data['S11'].imag,
+    'S21_real': data['S21'].real,
+    'S21_imag': data['S21'].imag
+})
+
+df.to_csv('LPF_400MHz_sweep.csv', index=False)
+```
+
+### 🧮 5. Preprocessing and Feature Engineering
+
+```python
+import numpy as np
+
+df['S21_mag_dB'] = 20 * np.log10(np.sqrt(df['S21_real']**2 + df['S21_imag']**2))
+df['S21_phase_deg'] = np.degrees(np.arctan2(df['S21_imag'], df['S21_real']))
+```
+
+Normalize the magnitude and phase data and assign labels (e.g., `"BPF_600MHz"`).
+
+### 🧱 6. Integration with ML/DL Models
+
+- **1D CNNs:** learn directly from the full S21 traces  
+- **FNNs:** use extracted features for regression  
+- **Autoencoders:** monitor calibration anomalies  
+
+### ⚡ 7. Tips for Reliable Measurements
+
+- Keep cables still between sweeps  
+- Control temperature for repeatable data  
+- Perform multiple measurements and average results  
+- Record metadata (time, temperature, etc.)  
+- Use automation for multi-circuit testing  
 
 ---
 
@@ -87,41 +169,32 @@ Accurate and automated data collection is the cornerstone of any successful ML p
 
 **Hardware Setup**
 - Connect the NanoVNA to the host PC via USB.  
-- Attach the VNA ports:
-  - CH0 (Port 1) and CH1 (Port 2) to the RF Test Board using SMA cables.  
-- Perform a **full 2-port SOLT calibration** (Short, Open, Load, Thru) at the reference plane to remove cable and connector parasitics.
+- Attach CH0 and CH1 to the RF Test Board using SMA cables.  
+- Perform a **full 2-port SOLT calibration**.
 
 **Tooling**
-- Use a Python library such as `pynanovna` or equivalent scripts to control the VNA.
+- Use `pynanovna` or equivalent scripts.
 
 **Sweep Settings**
-- Frequency points: 201 to 401  
-- Frequency range: **1 MHz – 1 GHz** (or as relevant for your DUT)
+- Frequency points: 201–401  
+- Frequency range: **1 MHz – 1 GHz**
 
 **Data Capture**
-- Measure complex S-parameters:
-  - `frequency`, `S11 Real`, `S11 Imag`, `S21 Real`, `S21 Imag`
-- Save results in `.csv` or Touchstone `.s2p` format.
+- Measure `frequency`, `S11 Real`, `S11 Imag`, `S21 Real`, `S21 Imag`  
+- Save to `.csv` or `.s2p`
 
----
-
-### Example: Data Acquisition Script
+### Example Script
 
 ```python
 import pandas as pd
 from pynanovna import NanoVNA
 
 vna = NanoVNA()
-
-# Example sweep configuration
-vna.set_start(1e6)    # 1 MHz
-vna.set_stop(1e9)     # 1 GHz
+vna.set_start(1e6)
+vna.set_stop(1e9)
 vna.set_points(401)
-
-# Capture S-parameters
 freqs, s11, s21 = vna.capture()
 
-# Save as CSV
 df = pd.DataFrame({
     "Frequency (Hz)": freqs,
     "S11 Real": s11.real,
@@ -129,39 +202,20 @@ df = pd.DataFrame({
     "S21 Real": s21.real,
     "S21 Imag": s21.imag
 })
-
 df.to_csv("nanovna_data.csv", index=False)
-print("Data saved to nanovna_data.csv")
 ```
-
----
-
 ### B. Feature Engineering and Normalization
-
-**Feature Vector (X):**
-
-The most robust input features are derived from complex S21 and S11 data:
 
 ```
 |S21|_dB   = 20 * log10(|S21|)
 Phase_deg = arg(S21) * (180 / π)
 ```
 
-Concatenate magnitude and phase into a single 1D array per measurement.
-
-**Normalization:**
-- Use **Min-Max Scaling (0–1)** or **Z-score normalization**.
-
-**Labeling (Y):**
-- Assign clear labels such as `"LPF 400MHz"`, `"10 dB Attenuator"`, etc.
+Normalize and label each sweep for training.
 
 ---
 
 ## II. Project 1: Filter Type Classification (Deep Learning)
-
-Train a model to automatically identify the **type of RF circuit** (e.g., LPF, HPF, BPF, Attenuator).
-
-### A. 1D Convolutional Neural Network (1D-CNN)
 
 ```python
 import tensorflow as tf
@@ -178,13 +232,9 @@ def build_cnn(input_shape, num_classes):
     ])
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     return model
-
-# Example usage:
-# cnn = build_cnn((401, 2), 4)
-# cnn.summary()
 ```
 
-**Training Example:**
+### Training Example
 
 ```python
 from sklearn.model_selection import train_test_split
@@ -205,8 +255,6 @@ cnn.evaluate(X_test, y_test)
 
 ## III. Project 2: Component Value Regression
 
-Predict continuous component values (e.g., attenuation in dB, resistance in Ω).
-
 ```python
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense
@@ -215,14 +263,10 @@ def build_regression_model(input_dim):
     model = Sequential([
         Dense(128, activation='relu', input_dim=input_dim),
         Dense(64, activation='relu'),
-        Dense(1)  # Continuous output
+        Dense(1)
     ])
     model.compile(optimizer='adam', loss='mse', metrics=['mae'])
     return model
-
-# Example usage:
-# reg_model = build_regression_model(802)
-# reg_model.fit(X_train, y_train, epochs=100, validation_split=0.2)
 ```
 
 ---
@@ -231,7 +275,7 @@ def build_regression_model(input_dim):
 
 ```python
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input
+from tensorflow.keras.layers import Input, Dense
 
 def build_autoencoder(input_dim):
     input_layer = Input(shape=(input_dim,))
@@ -239,17 +283,13 @@ def build_autoencoder(input_dim):
     encoded = Dense(32, activation='relu')(encoded)
     decoded = Dense(64, activation='relu')(encoded)
     decoded = Dense(input_dim, activation='linear')(decoded)
-
     autoencoder = Model(inputs=input_layer, outputs=decoded)
     autoencoder.compile(optimizer='adam', loss='mse')
     return autoencoder
-
-# Example usage:
-# ae = build_autoencoder(802)
-# ae.fit(X_train, X_train, epochs=50, batch_size=32)
 ```
 
-**Reconstruction Error Thresholding Example:**
+### Reconstruction Error Thresholding Example
+
 ```python
 reconstructions = ae.predict(X_test)
 errors = np.mean(np.square(X_test - reconstructions), axis=1)
@@ -263,10 +303,10 @@ print(f"Detected {np.sum(anomalies)} anomalies.")
 ## 🧰 Tools & Libraries
 
 - Python 3.9+  
-- PyNanoVNA (or equivalent)  
+- PyNanoVNA  
 - NumPy, Pandas, Scikit-learn  
 - TensorFlow / PyTorch  
-- Matplotlib / Plotly
+- Matplotlib / Plotly  
 
 ---
 
