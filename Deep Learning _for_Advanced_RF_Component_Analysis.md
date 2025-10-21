@@ -1,6 +1,5 @@
-# ====================================================================================================
+
 # NanoVNA Automated Data Acquisition & AI-Enabled RF Analysis
-# ====================================================================================================
 
 This project demonstrates an **end-to-end workflow** for automated RF measurement using the **NanoVNA Filter Attenuator Test Board** integrated with **Machine Learning (ML)** and **Deep Learning (DL)** models. The workflow leverages the **latest automated acquisition script v2.9** (900 MHz constraint and logging fix) for robust data collection, preprocessing, and ML/DL integration.
 
