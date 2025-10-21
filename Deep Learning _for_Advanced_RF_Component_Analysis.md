@@ -1,5 +1,3 @@
-# NanoVNA Automated Data Acquisition & Deep Learning Workflow (v2.9)
-
 # ====================================================================================================
 # NanoVNA Automated Data Acquisition & AI-Enabled RF Analysis
 # ====================================================================================================
