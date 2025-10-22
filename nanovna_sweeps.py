@@ -71,7 +71,7 @@ print("✅ Repetitive 'calibration not valid' messages are now suppressed reliab
 # ---------------------------
 # 3️⃣ Configuration & Resumption Logic (UNCHANGED)
 # ---------------------------
-MAX_POINTS = 1024
+MAX_POINTS = 1024 # Note: MAX_POINTS defaults to 101
 SWEEP_AVERAGE_COUNT = 3 
 SWEEPS_PER_BATCH = 100 # Run 100 new sweeps per circuit
 SAVE_FOLDER = "sweeps"
