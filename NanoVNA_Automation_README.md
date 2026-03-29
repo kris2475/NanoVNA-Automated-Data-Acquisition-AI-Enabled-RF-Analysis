@@ -2,7 +2,7 @@
 
 ## 🧩 Introduction
 
-Modern RF and microwave research often demands rapid, repeatable, and accurate acquisition of **S-parameter data** across multiple circuits. Manual data collection using a **Vector Network Analyser (VNA)** can be time-consuming, inconsistent, and susceptible to human error — especially when multiple devices or frequency ranges are involved.
+Modern RF and microwave research often demands rapid, repeatable, and accurate acquisition of **S-parameter data** across multiple circuits. Manual data collection using a **Vector Network Analyser (VNA)** can be time-consuming, inconsistent, and susceptible to human error, especially when multiple devices or frequency ranges are involved.
 
 The **NanoVNA Automated Data Acquisition Script** was developed to address these challenges for users of the **NanoVNA** platform. It provides a fully automated method for sweeping, averaging, and storing calibrated measurement data across a predefined list of circuits, each with its own optimised frequency range.
 
